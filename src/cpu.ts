@@ -1,0 +1,29 @@
+export type FlowEdge='pc-rom'|'rom-ir'|'ir-control'|'control-pc'|'ir-a'|'ir-alu'|'a-alu'|'alu-a'|'control-ram'|'ram-a'|'a-ram'|'ram-alu';
+export type CpuNode='control'|'pc'|'ir'|'a'|'alu'|'z'|'rom'|'ram';
+export type StatusKind='ready'|'ok'|'error';
+export interface MachineState { a:number; pc:number; z:0|1; halted:boolean; ram:readonly number[]; changed:readonly number[]; lines:readonly string[]; flow:readonly FlowEdge[]; hot:readonly CpuNode[]; instruction:string; explanation:string; statusMessage:string; statusKind:StatusKind }
+export function createInitialMachine():MachineState{return {a:0,pc:0,z:0,halted:false,ram:Array<number>(256).fill(0),changed:[],lines:[],flow:[],hot:[],instruction:'',explanation:'Guarda A, PC e IR all’interno del chip. La RAM principale è disegnata fuori dal nucleo CPU per distinguerla dai registri.',statusMessage:'Pronto. Premi «Passo» per iniziare.',statusKind:'ready'}}
+function parseProgram(source:string):readonly string[]{return source.split(/\r?\n/).map(line=>line.split(';')[0].trim()).filter(Boolean)}
+function parseNumber(token:string):number{if(/^\$[\da-f]{1,2}$/i.test(token))return Number.parseInt(token.slice(1),16);if(/^0x[\da-f]{1,2}$/i.test(token))return Number.parseInt(token.slice(2),16);if(/^\d+$/.test(token))return Number(token);throw new Error(`Valore non valido: ${token}. Usa un numero, $FF o 0xFF.`)}
+function parseAddress(token:string):number{const address=parseNumber(token);if(address<0||address>255)throw new Error(`Indirizzo fuori memoria: ${token}. Usa un valore da $00 a $FF.`);return address}
+function byte(value:number):number{return ((value%256)+256)%256}
+function hex(value:number):string{return value.toString(16).toUpperCase().padStart(2,'0')}
+function withError(machine:MachineState,message:string):MachineState{return {...machine,statusMessage:message,statusKind:'error'}}
+export function executeStep(machine:MachineState,source:string):MachineState{
+ if(machine.halted)return withError(machine,'La CPU è ferma. Premi «Riavvia» per ricominciare.');
+ const lines=machine.lines.length===0?parseProgram(source):machine.lines;
+ if(machine.pc>=lines.length)return withError(machine,'Il programma è finito senza HLT. Aggiungi HLT alla fine.');
+ const current=machine.pc;const instruction=lines[current].toUpperCase();const [operation,argument,extra]=instruction.split(/\s+/);
+ let next:MachineState={...machine,lines,instruction,pc:machine.pc+1,flow:['pc-rom','rom-ir'],hot:['pc','rom','ir'],statusKind:'ok'};
+ const requireArgument=():string=>{if(!argument||extra)throw new Error(`${operation} richiede un solo operando.`);return argument};
+ const readOperand=():{value:number;immediate:boolean;address?:number}=>{const token=requireArgument();if(token.startsWith('#'))return {value:byte(parseNumber(token.slice(1))),immediate:true};const address=parseAddress(token);return {value:next.ram[address],immediate:false,address}};
+ try{switch(operation){
+ case 'LDA':{const operand=readOperand();const flow:FlowEdge[]=[...next.flow,operand.immediate?'ir-a':'ir-control'];const hot:CpuNode[]=[...next.hot,'control','a','z'];if(!operand.immediate){flow.push('control-ram','ram-a');hot.push('ram')}next={...next,a:operand.value,z:operand.value===0?1:0,flow,hot,explanation:operand.immediate?`LDA # ha preso il valore dall’istruzione in ROM e lo ha scritto negli 8 circuiti bistabili del registro A. Ora A = ${hex(operand.value)}.`:`LDA ha mandato l’indirizzo ${hex(operand.address??0)} alla RAM; il dato letto è stato memorizzato nei flip-flop di A. Ora A = ${hex(operand.value)}.`};break}
+ case 'STA':{const token=requireArgument();if(token.startsWith('#'))throw new Error('STA richiede un indirizzo, per esempio $20.');const address=parseAddress(token);const ram=[...next.ram];ram[address]=next.a;next={...next,ram,changed:[...new Set([...next.changed,address])],flow:[...next.flow,'ir-control','control-ram','a-ram'],hot:[...next.hot,'control','a','ram'],explanation:`STA ha letto l’indirizzo ${hex(address)} e trasferito lì gli 8 bit del registro A. A è un circuito dentro la CPU; ${hex(address)} è una posizione della RAM.`};break}
+ case 'ADD':case 'SUB':{const operand=readOperand();const result=operation==='ADD'?byte(next.a+operand.value):byte(next.a-operand.value);const flow:FlowEdge[]=[...next.flow,operand.immediate?'ir-alu':'ir-control'];const hot:CpuNode[]=[...next.hot,'a','alu','z'];if(!operand.immediate){flow.push('control-ram','ram-alu');hot.push('control','ram')}flow.push('a-alu','alu-a');next={...next,a:result,z:result===0?1:0,flow,hot,explanation:`L’ALU ha combinato il valore in A con ${operand.immediate?'il valore immediato nell’istruzione':`il dato letto dalla RAM ${hex(operand.address??0)}`}. Il risultato è stato scritto nei circuiti del registro A: ${hex(result)}.`};break}
+ case 'JMP':case 'JZ':{const destination=parseNumber(requireArgument());const taken=operation==='JMP'||next.z===1;next={...next,pc:taken?destination:next.pc,flow:[...next.flow,'ir-control','control-pc'],hot:[...next.hot,'control','pc'],explanation:taken?`L’unità di controllo ha caricato ${destination} nei flip-flop del PC: la CPU riprenderà da quella riga.`:'Il flag Z vale 0, quindi l’unità di controllo lascia il PC al passo successivo.'};break}
+ case 'HLT':if(argument||extra)throw new Error('HLT non richiede operandi.');next={...next,halted:true,flow:[...next.flow,'ir-control'],hot:[...next.hot,'control'],explanation:'L’unità di controllo ha riconosciuto HLT e ferma i nuovi passi. I valori restano conservati nei registri e nella RAM.'};break;
+ default:throw new Error(`Istruzione sconosciuta: ${operation}. Usa LDA, STA, ADD, SUB, JMP, JZ o HLT.`)}
+ return {...next,statusMessage:`Riga ${current}: ${instruction} — ${next.halted?'programma terminato':'passo eseguito'}.`,statusKind:'ok'}
+ }catch(error){return withError(machine,error instanceof Error?error.message:String(error))}
+}
