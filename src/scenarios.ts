@@ -1,19 +1,18 @@
-export interface Scenario {
-  id: string
-  title: string
-  question: string
-  source: string
-  watch: string
-  result: string
-  address: string
-}
+export interface Scenario { id: string; title: string; level: string; question: string; source: string; input: number[]; expected: string; hint: string }
+export const scenarios: Scenario[] = [
+  { id: 'echo', title: 'Eco di un numero', level: 'Sequenza', question: 'Se inserisci 7, che cosa esce e come cambia A?', source: 'INP\nOUT\nHLT', input: [7], expected: 'Uscita 007. OUT copia A senza svuotarlo.', hint: 'Segui INP, poi osserva A prima e dopo OUT.' },
+  { id: 'store', title: 'Una cella conserva il dato', level: 'Memoria', question: 'Quale cella contiene 012 alla fine?', source: 'LDA DATO\nSTA COPIA\nHLT\nDATO DAT 12\nCOPIA DAT 0', input: [], expected: 'COPIA contiene 012; DATO conserva 012.', hint: 'STA copia il valore di A nella cella indicata.' },
+  { id: 'sum', title: 'Somma due input', level: 'Sequenza', question: 'Con 4 e 9, che cosa esce?', source: 'INP\nSTA PRIMO\nINP\nADD PRIMO\nOUT\nHLT\nPRIMO DAT 0', input: [4, 9], expected: 'Uscita 013; PRIMO contiene 004.', hint: 'Il primo INP viene salvato prima che il secondo lo sostituisca.' },
+  { id: 'max', title: 'Trova il maggiore', level: 'Scelta', question: 'Con 8 e 5, BRP prende il salto?', source: 'INP\nSTA PRIMO\nINP\nSTA SECONDO\nSUB PRIMO\nBRP SECONDO_MAGGIORE\nLDA PRIMO\nBRA FINE\nSECONDO_MAGGIORE LDA SECONDO\nFINE OUT\nHLT\nPRIMO DAT 0\nSECONDO DAT 0', input: [8, 5], expected: 'No: 5 − 8 è negativo. L’uscita è 008.', hint: 'BRP controlla l’indicatore negativo dopo SUB.' },
+  { id: 'calculator', title: 'Mini calcolatrice', level: 'Progetto', question: 'Il primo input è 0 per sommare o 1 per sottrarre. Con 0, 4, 9 quale ramo viene eseguito?', source: 'INP\nSTA OPERAZIONE\nINP\nSTA PRIMO\nINP\nSTA SECONDO\nLDA OPERAZIONE\nBRZ SOMMA\nLDA PRIMO\nSUB SECONDO\nBRA FINE\nSOMMA LDA PRIMO\nADD SECONDO\nFINE OUT\nHLT\nOPERAZIONE DAT 0\nPRIMO DAT 0\nSECONDO DAT 0', input: [0, 4, 9], expected: 'BRZ sceglie SOMMA; l’uscita è 013.', hint: 'L’operazione è un dato: BRZ sceglie il ramo dopo LDA OPERAZIONE.' },
+  { id: 'countdown', title: 'Conto alla rovescia', level: 'Ciclo', question: 'Con input 3, quanti valori vengono mostrati?', source: 'INP\nSTA CONTO\nCICLO LDA CONTO\nOUT\nSUB UNO\nSTA CONTO\nBRZ FINE\nBRA CICLO\nFINE HLT\nCONTO DAT 0\nUNO DAT 1', input: [3], expected: 'Tre valori: 003, 002, 001.', hint: 'BRZ viene eseguito dopo la sottrazione e la scrittura di CONTO.' },
+  { id: 'multiply', title: 'Moltiplica per somme', level: 'Sfida', question: 'Con 3 e 4, qual è il risultato e quante somme avvengono?', source: 'INP\nSTA FATTORE\nINP\nSTA VOLTE\nCICLO LDA VOLTE\nBRZ FINE\nSUB UNO\nSTA VOLTE\nLDA TOTALE\nADD FATTORE\nSTA TOTALE\nBRA CICLO\nFINE LDA TOTALE\nOUT\nHLT\nFATTORE DAT 0\nVOLTE DAT 0\nTOTALE DAT 0\nUNO DAT 1', input: [3, 4], expected: 'Uscita 012 dopo quattro somme di 003.', hint: 'VOLTE diminuisce a ogni giro; TOTALE cresce di FATTORE.' },
+]
 
-export const scenarios: readonly Scenario[] = [
-  { id: 'immediate', title: '01 · Un numero nell’istruzione', question: 'Se la RAM è vuota, da dove arriva 42?', source: 'LDA #42\nHLT', watch: 'Osserva IR → A. La RAM dati non viene letta.', result: 'A = $2A, cioè 42. Il valore era scritto nell’istruzione.', address: '20' },
-  { id: 'write', title: '02 · Scrivere una cella', question: 'Dopo STA, A perde il suo valore?', source: 'LDA #7\nSTA $20\nHLT', watch: 'Osserva A → RAM e la cella $20.', result: 'A resta $07 e RAM[$20] diventa $07: è una copia.', address: '20' },
-  { id: 'read', title: '03 · Leggere una cella', question: 'LDA $20 carica 32 oppure il contenuto di $20?', source: 'LDA #7\nSTA $20\nLDA #0\nLDA $20\nHLT', watch: 'Al quarto passo osserva RAM → A.', result: 'A torna $07: $20 individua la cella, non il dato letto.', address: '20' },
-  { id: 'sum', title: '04 · Somma con la RAM', question: 'Che cosa resta in $20 dopo ADD $20?', source: 'LDA #7\nSTA $20\nLDA #5\nADD $20\nSTA $21\nHLT', watch: 'Osserva A, $20 e $21 a ogni passo.', result: 'RAM[$20] resta $07; A e RAM[$21] diventano $0C (12).', address: '20' },
-  { id: 'overflow', title: '05 · Overflow a 8 bit', question: 'Dove finisce il 260 di 250 + 10?', source: 'LDA #250\nADD #10\nHLT', watch: 'Confronta $FA con il byte dopo ADD.', result: 'A = $04: vengono conservati solo gli otto bit meno significativi.', address: '20' },
-  { id: 'zero', title: '06 · Salto condizionato', question: 'LDA #99 verrà eseguita?', source: 'LDA #9\nSUB #9\nJZ 4\nLDA #99\nHLT', watch: 'Guarda Z e PC dopo SUB e JZ.', result: 'No. SUB produce zero, Z = 1 e JZ porta PC alla riga 4.', address: '20' },
-  { id: 'loop', title: '07 · Un ciclo che termina', question: 'Quante volte viene eseguita SUB #1?', source: 'LDA #3\nSUB #1\nJZ 4\nJMP 1\nHLT', watch: 'Segui A: 3 → 2 → 1 → 0. Poi Z diventa 1.', result: 'Tre volte. JZ raggiunge HLT soltanto quando A vale zero.', address: '20' }
+export interface X86Scenario { id: string; title: string; source: string; first: number; second: number; question: string; expected: string }
+export const x86Scenarios: X86Scenario[] = [
+  { id: 'add', title: 'Somma', source: 'mov rax, rdi\nadd rax, rsi\nret', first: 4, second: 9, question: 'Quanto vale RAX dopo ADD?', expected: 'RAX vale 13.' },
+  { id: 'sub', title: 'Sottrazione', source: 'mov rax, rdi\nsub rax, rsi\nret', first: 9, second: 4, question: 'Quale argomento viene sottratto?', expected: 'RSI viene sottratto da RAX; il risultato è 5.' },
+  { id: 'max', title: 'Massimo', source: 'mov rax, rdi\ncmp rdi, rsi\njg fine\nmov rax, rsi\nfine: ret', first: 8, second: 5, question: 'JG salta a FINE?', expected: 'Sì. RDI è maggiore di RSI; RAX resta 8.' },
+  { id: 'mul', title: 'Ciclo di somme', source: 'mov rax, 0\nmov rcx, rsi\nciclo: cmp rcx, 0\nje fine\nadd rax, rdi\ndec rcx\njmp ciclo\nfine: ret', first: 3, second: 4, question: 'Quante volte viene eseguita ADD?', expected: 'Quattro volte; RAX vale 12.' },
 ]
