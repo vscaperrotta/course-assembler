@@ -1,43 +1,47 @@
 # Officina Assembly
 
-Un corso interattivo in italiano per chi parte da zero e vuole capire come un'istruzione diventa lavoro della macchina, poi scrivere piccoli programmi con calcoli, scelte e cicli.
+An interactive course for complete beginners. Learn how an instruction becomes work inside a computer, then write small programs with calculations, decisions, and loops.
 
-## Percorso
+## Course outline
 
-Le 17 lezioni sono liberamente accessibili in sei parti: primi passi, macchina e codice numerico, programmazione LMC, passaggio a x86-64, piccole funzioni x86-64 e collegamento con il C. Ogni lezione propone spiegazioni, schemi originali, un esempio spiegato, una previsione, una prova, domande e, dove previsto, un esercizio verificato con più casi.
+The 17 lessons are freely accessible in six parts: first steps, the machine and numeric code, LMC programming, the move to x86-64, small x86-64 functions, and the connection to C. Each lesson includes explanations, original diagrams, a worked example, a prediction, hands-on practice, questions, and, where applicable, an exercise checked against multiple cases.
 
-Il laboratorio **LMC** assembla etichette e `DAT` in una memoria condivisa di 100 celle. Mostra i codici a tre cifre, i registri, le fasi fetch/decode/execute e la traccia. Supporta `INP`, `OUT`, `LDA`, `STA`, `ADD`, `SUB`, `BRA`, `BRZ`, `BRP`, `HLT` e `DAT`. L'aritmetica conserva tre cifre modulo 1000; un indicatore separato ricorda un risultato negativo per `BRP`.
+The **LMC** lab assembles labels and `DAT` into a shared memory of 100 cells. It shows three-digit machine codes, registers, the fetch/decode/execute phases, and an execution trace. It supports `INP`, `OUT`, `LDA`, `STA`, `ADD`, `SUB`, `BRA`, `BRZ`, `BRP`, `HLT`, and `DAT`. Arithmetic keeps three digits modulo 1000; a separate indicator records a negative result for `BRP`.
 
-Il laboratorio **x86-64** interpreta un sottoinsieme didattico in sintassi Intel/NASM: `MOV`, `ADD`, `SUB`, `CMP`, `INC`, `DEC`, `JMP`, `JE`, `JNE`, `JG`, `JGE`, `JL`, `JLE` e `RET`, con i registri `RAX`, `RBX`, `RCX`, `RDX`, `RDI`, `RSI`. Una funzione riceve due interi in `RDI` e `RSI` e restituisce `RAX`, secondo la convenzione System V AMD64 usata negli esempi. Il simulatore gira nel browser anche su Mac ARM; non esegue byte x86 né sostituisce un assembler o un emulatore completo. La sezione sui byte mostra codifiche verificate di alcune istruzioni introdotte.
+The **x86-64** lab interprets an educational subset of Intel/NASM syntax: `MOV`, `ADD`, `SUB`, `CMP`, `INC`, `DEC`, `JMP`, `JE`, `JNE`, `JG`, `JGE`, `JL`, `JLE`, and `RET`, using the `RAX`, `RBX`, `RCX`, `RDX`, `RDI`, and `RSI` registers. A function receives two integers in `RDI` and `RSI` and returns its result in `RAX`, following the System V AMD64 convention used in the examples. The simulator runs in the browser, including on ARM Macs. It does not execute x86 machine code or replace a full assembler or emulator. The section about bytes shows verified encodings for some of the instructions introduced.
 
-I progressi, le risposte e i programmi degli esercizi vengono salvati nel `localStorage` del browser. In **Riferimenti** puoi esportare o importare un JSON validato per continuare su un altro computer. Il file esportato può essere aggiunto manualmente a un fork; l'app non scrive nel repository.
+Progress, answers, exercise programs, and your preferred language are saved in the browser's `localStorage`. Under **References**, you can export or import validated JSON to continue on another computer. The exported `officina-assembly-progress.json` file is excluded from Git.
 
-## Avvio e verifica
+## Run and verify
 
-Richiede Node.js 22.18+ (i test eseguono direttamente file TypeScript).
+Requires Node.js 22.18+ (the tests execute TypeScript files directly).
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Apri l'indirizzo mostrato da Vite. Per verificare il progetto:
+Open the address shown by Vite. To verify the project:
 
 ```sh
 npm test
 npm run build
 ```
 
-La build statica viene creata in `dist/` e usa percorsi relativi per funzionare anche sotto il percorso di un repository GitHub Pages. La workflow in `.github/workflows/verify.yml` esegue test e build su push e pull request; la pubblicazione non è automatica.
+The static build is created in `dist/` and uses relative paths so it also works under a GitHub Pages repository path. The workflow in `.github/workflows/verify.yml` runs tests and builds on pushes and pull requests; publishing is not automatic.
 
-## Fonti e materiali
+## Adding a language
 
-La struttura didattica prende spunto dall'[introduzione di SerHack](https://serhack.me/it/courses/asm/prima-parte-introduzione-assembly/), dal [tutorial x86-64 di mschwartz](https://github.com/mschwartz/assembly-tutorial), dal [LMC di 101Computing](https://www.101computing.net/lmc/) e da testi universitari consultati localmente. Le tre risorse descrivono macchine e sintassi diverse: il corso le distingue esplicitamente. Testi, esercizi, diagrammi e illustrazioni pubblicati qui sono originali.
+Copy `src/translations/en.json` to a new language file and translate its values without changing the keys or `{0}` placeholders. Import the dictionary in `src/language.ts`; the language selector and progress validation read the supported language codes from that registry. Add the translated lessons, exercises, and scenarios alongside the existing locale data, then register them in `src/locales.ts`.
 
-La cartella `reference/` contiene PDF di consultazione personale ed è esclusa da Git. Non includere quei file nel repository pubblico.
+## Sources and materials
 
-## Limiti dichiarati
+The teaching structure draws on [SerHack's introduction](https://serhack.me/it/courses/asm/prima-parte-introduzione-assembly/), [mschwartz's x86-64 tutorial](https://github.com/mschwartz/assembly-tutorial), [101Computing's LMC guide](https://www.101computing.net/lmc/), and university texts consulted locally. These resources describe different machines and syntaxes; the course distinguishes them explicitly. The text, exercises, diagrams, and illustrations published here are original.
 
-- Il modello LMC ha 100 celle e numeri da 000 a 999; i risultati fuori intervallo seguono le regole specifiche di questa app.
-- Il simulatore x86-64 copre solo le istruzioni elencate sopra, registri interi e salti con segno. Non gestisce memoria x86, stack, chiamate al sistema o eseguibili.
-- I progressi restano nel browser usato; esporta il JSON per trasferirli o conservarli.
+The `reference/` directory contains PDFs for personal reference and is excluded from Git. Do not include these files in the public repository.
+
+## Scope and limits
+
+- The LMC model has 100 cells and values from 000 to 999. Out-of-range results follow this app's specific rules.
+- The x86-64 simulator covers only the instructions listed above, integer registers, and signed branches. It does not handle x86 memory, the stack, system calls, or executables.
+- Progress stays in the browser where it was created. Export the JSON to transfer or preserve it.

@@ -1,0 +1,39 @@
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.language-control select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 12px var(--mono);
+}
+
+@media (max-width: 580px) {
+  .brand {
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .brand-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .topbar-actions {
+    gap: 0;
+  }
+
+  .topbar-meta {
+    display: none;
+  }
+
+  .language-control select {
+    padding: 6px 7px;
+    font-size: 11px;
+  }
+}

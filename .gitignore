@@ -2,5 +2,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 reference/
+officina-assembly-progress.json
 .DS_Store
 .pnp.*

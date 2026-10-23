@@ -24,10 +24,10 @@ test('LMC exposes fetch, decode, execute and waits for input', () => {
   machine = runMachine(machine); assert.deepEqual(machine.output, [7])
 })
 test('LMC reports syntax, missing HLT, and infinite loops', () => {
-  assert.throws(() => assemble('LDA MISSING\nHLT'), /Riga 1.*non definita/)
-  assert.throws(() => assemble('OUT'), /Manca HLT/)
+  assert.throws(() => assemble('LDA MISSING\nHLT'), /Line 1.*undefined label/)
+  assert.throws(() => assemble('OUT'), /Missing HLT/)
   const machine = runMachine(createMachine(assemble('LOOP BRA LOOP\nHLT')), 8)
-  assert.equal(machine.phase, 'error'); assert.match(machine.message, /Limite di 8/)
+  assert.equal(machine.phase, 'error'); assert.match(machine.message, /Limit of 8/)
 })
 test('LMC uses latest shared-memory content as executable code', () => {
   const program = assemble('LDA STOP\nSTA TARGET\nBRA TARGET\nTARGET OUT\nSTOP DAT 0\nHLT')
@@ -59,8 +59,8 @@ test('x86 supports arithmetic, signed conditional branches, and RET', () => {
     assert.equal(state.halted, true)
     assert.equal(state.registers.RAX, BigInt(result))
   }
-  assert.throws(() => assembleX86('mul rax, rsi\nret'), /Riga 1.*non supportata/)
-  assert.throws(() => assembleX86('jmp missing\nret'), /Riga 1.*non definita/)
+  assert.throws(() => assembleX86('mul rax, rsi\nret'), /Line 1.*not supported/)
+  assert.throws(() => assembleX86('jmp missing\nret'), /Line 1.*undefined label/)
 })
 test('all x86 scenarios and supported instruction variants run', () => {
   const expected = { add: 13n, sub: 5n, max: 8n, mul: 12n }
@@ -75,7 +75,7 @@ test('all x86 scenarios and supported instruction variants run', () => {
     assert.equal(state.halted, true, op)
   }
   const limit = runX86(createX86Machine(assembleX86('loop: jmp loop\nret')), 8)
-  assert.match(limit.error, /Limite/)
+  assert.match(limit.error, /Limit/)
 })
 test('all lesson examples assemble and finish in the matching laboratory', () => {
   const inputs = { computer: [7], cycle: [7], sum: [4, 9], branch: [8, 5], loops: [3] }
@@ -98,8 +98,8 @@ test('exercise checker tries all cases and rejects wrong programs', () => {
 test('progress JSON round trips and rejects invalid imports', () => {
   const progress = { ...emptyProgress(), completed: ['computer'], answers: { computer: '7' } }
   assert.deepEqual(parseProgress(progressJson(progress)), progress)
-  assert.throws(() => parseProgress('{bad'), /JSON valido/)
-  assert.throws(() => parseProgress('{"version":2}'), /Versione/)
-  assert.throws(() => parseProgress(progressJson({ ...progress, completed: ['inventata'] })), /lezioni sconosciute/)
-  assert.throws(() => parseProgress(progressJson({ ...progress, passed: ['inventato'] })), /esercizi sconosciuti/)
+  assert.throws(() => parseProgress('{bad'), /valid JSON/)
+  assert.throws(() => parseProgress('{"version":2}'), /Unsupported progress version/)
+  assert.throws(() => parseProgress(progressJson({ ...progress, completed: ['inventata'] })), /unknown lessons/)
+  assert.throws(() => parseProgress(progressJson({ ...progress, passed: ['inventato'] })), /unknown exercises/)
 })
